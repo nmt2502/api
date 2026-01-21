@@ -13,25 +13,43 @@ let mucDoTinCay = "Thấp";
 
 // ====== HÀM DỰ ĐOÁN ĐƠN GIẢN (BẠN CÓ THỂ NÂNG CẤP) ======
 function tinhDuDoan(chuoi) {
-    if (chuoi.length < 5) {
-        return {
-            duDoan: "Chưa đủ dữ liệu",
-            doTinCay: 50,
-            mucDoTinCay: "Thấp"
-        };
+    const patterns = [
+        { name: "1-1", list: ["TXTX", "XTXT"], predict: "Theo cầu", tc: 72 },
+        { name: "2-1-2", list: ["TTXTT", "XXTXX"], predict: "Theo cầu", tc: 75 },
+        { name: "3-1", list: ["TTTX", "XXXT"], predict: "Đảo 1", tc: 78 },
+        { name: "3-1-3", list: ["TTTXTTT", "XXXTXXX"], predict: "Theo cầu", tc: 82 },
+        { name: "1-2-4", list: ["TXXTTTT", "XTTXXXX"], predict: "Theo cầu", tc: 85 },
+        { name: "Bệt", list: ["TTTTT", "XXXXX"], predict: "Theo bệt", tc: 90 },
+        { name: "2-2", list: ["TTXX", "XXTT"], predict: "Theo cầu", tc: 70 },
+        { name: "3-3", list: ["TTTXXX", "XXXTTT"], predict: "Theo cầu", tc: 80 },
+        { name: "4-4", list: ["TTTTXXXX", "XXXXTTTT"], predict: "Theo cầu", tc: 83 },
+        { name: "4-5", list: ["TTTTXXXXX", "XXXXTTTTT"], predict: "Theo cầu", tc: 88 }
+    ];
+
+    for (const p of patterns) {
+        for (const pat of p.list) {
+            if (chuoi.endsWith(pat)) {
+                const last = pat[pat.length - 1];
+                const duDoan = last === "T" ? "Xỉu" : "Tài";
+
+                return {
+                    duDoan: duDoan,
+                    doTinCay: p.tc,
+                    mucDoTinCay: p.tc >= 85 ? "Rất cao" : p.tc >= 75 ? "Cao" : "Trung bình",
+                    tenCau: p.name
+                };
+            }
+        }
     }
 
-    const tail = chuoi.slice(-3);
-
-    if (tail === "TTT") {
-        return { duDoan: "Xỉu", doTinCay: 78, mucDoTinCay: "Cao" };
-    }
-    if (tail === "XXX") {
-        return { duDoan: "Tài", doTinCay: 78, mucDoTinCay: "Cao" };
-    }
-
-    return { duDoan: "Tài/Xỉu ngẫu nhiên", doTinCay: 62, mucDoTinCay: "Trung bình" };
+    return {
+        duDoan: "Chờ cầu rõ",
+        doTinCay: 55,
+        mucDoTinCay: "Thấp",
+        tenCau: "Không xác định"
+    };
 }
+
 
 // ====== API ======
 app.get("/api/sun", async (req, res) => {
