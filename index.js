@@ -64,7 +64,7 @@ function tachChuoiCau(chuoi, limit = 20) {
     return result.slice(-limit);
 }
 
-/* ================== THUẬT TOÁN SOI CẦU (THEO CẦU) ================== */
+/* ================== THUẬT TOÁN TOOL FREE ================== */
 function tinhDuDoan(chuoi) {
     const patterns = [
         { name: "1-1", list: ["TXTX", "XTXT"], tc: 72 },
@@ -93,19 +93,39 @@ function tinhDuDoan(chuoi) {
         { name: "4-5", list: ["TTTTXXXXX", "XXXXTTTTT"], tc: 88 }
     ];
 
+    if (!chuoi || chuoi.length < 3) {
+        return {
+            tenCau: "Chưa đủ dữ liệu",
+            duDoan: "Chờ Dữ Liệu",
+            doTinCay: 0,
+            mucDoTinCay: "Thấp"
+        };
+    }
+
+    // chỉ lấy đoạn cuối để soi (tránh nhiễu)
+    const tail = chuoi.slice(-20);
+
     for (const p of patterns) {
         for (const pat of p.list) {
-            if (chuoi.endsWith(pat)) {
-                const last = pat[pat.length - 1];
-                return {
-                    tenCau: p.name,
-                    duDoan: last === "T" ? "Tài" : "Xỉu", // ✅ theo cầu
-                    doTinCay: p.tc,
-                    mucDoTinCay:
-                        p.tc >= 85 ? "Rất cao" :
-                        p.tc >= 75 ? "Cao" :
-                        "Trung bình"
-                };
+
+            // duyệt từng độ dài cầu đang đi
+            for (let i = 3; i <= pat.length; i++) {
+                const dangDi = pat.slice(0, i);
+
+                if (tail.endsWith(dangDi)) {
+                    const benDangChay = dangDi[dangDi.length - 1];
+
+                    return {
+                        tenCau: p.name,
+                        duDoan: benDangChay === "T" ? "Tài" : "Xỉu",
+                        doTinCay: p.tc,
+                        mucDoTinCay:
+                            p.tc >= 90 ? "Cực cao" :
+                            p.tc >= 80 ? "Rất cao" :
+                            p.tc >= 70 ? "Cao" :
+                            "Trung bình"
+                    };
+                }
             }
         }
     }
@@ -117,6 +137,7 @@ function tinhDuDoan(chuoi) {
         mucDoTinCay: "Thấp"
     };
 }
+
 
 /* ================== API ================== */
 app.get("/api/sun", async (req, res) => {
