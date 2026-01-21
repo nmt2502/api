@@ -5,40 +5,43 @@ const path = require("path");
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+
+/* ================== FILE LƯU ================== */
 const DATA_FILE = path.join(__dirname, "data.json");
 
 /* ================== LOAD DATA ================== */
-let lastPhien = null;
-let chuoiCau = "";
-let win = 0;
-let loss = 0;
-let duDoanTruoc = null;
+let state = {
+    lastPhien: null,
+    chuoiCau: "",
+    duDoanTruoc: null,
+    win: 0,
+    loss: 0
+};
 
 if (fs.existsSync(DATA_FILE)) {
-    const saved = JSON.parse(fs.readFileSync(DATA_FILE, "utf8"));
-    lastPhien = saved.lastPhien;
-    chuoiCau = saved.chuoiCau;
-    win = saved.win;
-    loss = saved.loss;
-    duDoanTruoc = saved.duDoanTruoc;
+    try {
+        state = JSON.parse(fs.readFileSync(DATA_FILE, "utf8"));
+    } catch (e) {
+        console.log("⚠️ Lỗi đọc data.json, reset dữ liệu");
+    }
 }
 
-/* ================== BIẾN HIỆN TẠI ================== */
-let duDoan = "Chưa có";
-let doTinCay = 0;
-let mucDoTinCay = "Thấp";
-let tenCau = "Chưa xác định";
-
 /* ================== SAVE DATA ================== */
-function saveData() {
-    fs.writeFileSync(
-        DATA_FILE,
-        JSON.stringify(
-            { lastPhien, chuoiCau, win, loss, duDoanTruoc },
-            null,
-            2
-        )
-    );
+function saveState() {
+    fs.writeFileSync(DATA_FILE, JSON.stringify(state, null, 2));
+}
+
+/* ================== NỐI CHUỖI CẦU DÀI ================== */
+function appendChuoiCau(chuoi, kyTu, max = 500) {
+    if (!kyTu) return chuoi;
+
+    chuoi += kyTu;
+
+    if (chuoi.length > max) {
+        chuoi = chuoi.slice(chuoi.length - max);
+    }
+
+    return chuoi;
 }
 
 /* ================== THUẬT TOÁN SOI CẦU ================== */
@@ -87,58 +90,65 @@ app.get("/api/sun", async (req, res) => {
             "https://sunwinsaygex-pcl2.onrender.com/api/sun"
         );
 
+        if (!data || !data.phien || !data.ket_qua) {
+            return res.json({ error: "Dữ liệu không hợp lệ" });
+        }
+
         const kyTu = data.ket_qua === "Tài" ? "T" : "X";
 
-        if (data.phien !== lastPhien) {
+        /* ====== PHIÊN MỚI ====== */
+        if (data.phien !== state.lastPhien) {
 
-            /* ====== TÍNH WIN / LOSS ====== */
+            /* ====== SO KẾT QUẢ DỰ ĐOÁN TRƯỚC ====== */
             if (
-                duDoanTruoc &&
-                duDoanTruoc !== "Chờ thêm dữ liệu" &&
-                duDoanTruoc !== "Chưa có"
+                state.duDoanTruoc &&
+                state.duDoanTruoc !== "Chờ thêm dữ liệu"
             ) {
-                if (duDoanTruoc === data.ket_qua) win++;
-                else loss++;
+                if (state.duDoanTruoc === data.ket_qua) {
+                    state.win++;
+                } else {
+                    state.loss++;
+                }
             }
 
-            /* ====== UPDATE CHUỖI ====== */
-            chuoiCau += kyTu;
-            lastPhien = data.phien;
+            /* ====== NỐI CHUỖI ====== */
+            state.chuoiCau = appendChuoiCau(state.chuoiCau, kyTu);
+            state.lastPhien = data.phien;
 
-            /* ====== DỰ ĐOÁN MỚI ====== */
-            const kq = tinhDuDoan(chuoiCau);
-            duDoan = kq.duDoan;
-            doTinCay = kq.doTinCay;
-            mucDoTinCay = kq.mucDoTinCay;
-            tenCau = kq.tenCau;
-
-            duDoanTruoc = duDoan;
-
-            saveData(); // 🔒 LƯU NGAY
+            /* ====== LƯU ====== */
+            saveState();
         }
+
+        /* ====== DỰ ĐOÁN ====== */
+        const kq = tinhDuDoan(state.chuoiCau);
+        state.duDoanTruoc = kq.duDoan;
+
+        saveState();
 
         res.json({
             phien: data.phien,
             ket_qua: data.ket_qua,
-            chuoi_cau: chuoiCau,
-            ten_cau: tenCau,
-            du_doan: duDoan,
-            do_tin_cay: doTinCay,
-            muc_do_tin_cay: mucDoTinCay,
-            win,
-            loss,
+
+            chuoi_cau: state.chuoiCau,
+            ten_cau: kq.tenCau,
+            du_doan: kq.duDoan,
+            do_tin_cay: kq.doTinCay,
+            muc_do_tin_cay: kq.mucDoTinCay,
+
+            win: state.win,
+            loss: state.loss,
             ti_le_thang:
-                win + loss > 0
-                    ? ((win / (win + loss)) * 100).toFixed(2) + "%"
+                state.win + state.loss > 0
+                    ? ((state.win / (state.win + state.loss)) * 100).toFixed(2) + "%"
                     : "0%"
         });
 
-    } catch (e) {
-        res.status(500).json({ error: "API lỗi" });
+    } catch (err) {
+        res.status(500).json({ error: "Không lấy được dữ liệu" });
     }
 });
 
 /* ================== START ================== */
 app.listen(PORT, () => {
-    console.log("SUN API chạy tại port", PORT);
+    console.log("🚀 SUN API chạy tại port", PORT);
 });
