@@ -4,26 +4,27 @@ const axios = require("axios");
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// ====== BIẾN LƯU TRẠNG THÁI (KHÔNG RESET KHI RELOAD WEB) ======
+/* ================== BIẾN LƯU TRẠNG THÁI ================== */
 let lastPhien = null;
 let chuoiCau = "";
 let duDoan = "Chưa có";
 let doTinCay = 0;
 let mucDoTinCay = "Thấp";
+let tenCau = "Chưa xác định";
 
-// ====== HÀM DỰ ĐOÁN ĐƠN GIẢN (BẠN CÓ THỂ NÂNG CẤP) ======
+/* ================== THUẬT TOÁN SOI CẦU ================== */
 function tinhDuDoan(chuoi) {
     const patterns = [
-        { name: "1-1", list: ["TXTX", "XTXT"], predict: "Theo cầu", tc: 72 },
-        { name: "2-1-2", list: ["TTXTT", "XXTXX"], predict: "Theo cầu", tc: 75 },
-        { name: "3-1", list: ["TTTX", "XXXT"], predict: "Đảo 1", tc: 78 },
-        { name: "3-1-3", list: ["TTTXTTT", "XXXTXXX"], predict: "Theo cầu", tc: 82 },
-        { name: "1-2-4", list: ["TXXTTTT", "XTTXXXX"], predict: "Theo cầu", tc: 85 },
-        { name: "Bệt", list: ["TTTTT", "XXXXX"], predict: "Theo bệt", tc: 90 },
-        { name: "2-2", list: ["TTXX", "XXTT"], predict: "Theo cầu", tc: 70 },
-        { name: "3-3", list: ["TTTXXX", "XXXTTT"], predict: "Theo cầu", tc: 80 },
-        { name: "4-4", list: ["TTTTXXXX", "XXXXTTTT"], predict: "Theo cầu", tc: 83 },
-        { name: "4-5", list: ["TTTTXXXXX", "XXXXTTTTT"], predict: "Theo cầu", tc: 88 }
+        { name: "1-1", list: ["TXTX", "XTXT"], tc: 72 },
+        { name: "2-1-2", list: ["TTXTT", "XXTXX"], tc: 75 },
+        { name: "3-1", list: ["TTTX", "XXXT"], tc: 78 },
+        { name: "3-1-3", list: ["TTTXTTT", "XXXTXXX"], tc: 82 },
+        { name: "1-2-4", list: ["TXXTTTT", "XTTXXXX"], tc: 85 },
+        { name: "Bệt", list: ["TTTTT", "XXXXX"], tc: 90 },
+        { name: "2-2", list: ["TTXX", "XXTT"], tc: 70 },
+        { name: "3-3", list: ["TTTXXX", "XXXTTT"], tc: 80 },
+        { name: "4-4", list: ["TTTTXXXX", "XXXXTTTT"], tc: 83 },
+        { name: "4-5", list: ["TTTTXXXXX", "XXXXTTTTT"], tc: 88 }
     ];
 
     for (const p of patterns) {
@@ -33,25 +34,27 @@ function tinhDuDoan(chuoi) {
                 const duDoan = last === "T" ? "Xỉu" : "Tài";
 
                 return {
-                    duDoan: duDoan,
+                    tenCau: p.name,
+                    duDoan,
                     doTinCay: p.tc,
-                    mucDoTinCay: p.tc >= 85 ? "Rất cao" : p.tc >= 75 ? "Cao" : "Trung bình",
-                    tenCau: p.name
+                    mucDoTinCay:
+                        p.tc >= 85 ? "Rất cao" :
+                        p.tc >= 75 ? "Cao" :
+                        "Trung bình"
                 };
             }
         }
     }
 
     return {
-        duDoan: "Chờ dữ liệu",
-        doTinCay: 0,
-        mucDoTinCay: "Thấp",
-        tenCau: "Không xác định"
+        tenCau: "Chưa rõ cầu",
+        duDoan: "Chờ thêm dữ liệu",
+        doTinCay: 55,
+        mucDoTinCay: "Thấp"
     };
 }
 
-
-// ====== API ======
+/* ================== API SUN ================== */
 app.get("/api/sun", async (req, res) => {
     try {
         const { data } = await axios.get(
@@ -60,15 +63,16 @@ app.get("/api/sun", async (req, res) => {
 
         const kyTu = data.ket_qua === "Tài" ? "T" : "X";
 
-        // ====== CHỈ NỐI CHUỖI KHI CÓ PHIÊN MỚI ======
+        // Chỉ nối chuỗi khi có phiên mới
         if (data.phien !== lastPhien) {
             chuoiCau += kyTu;
             lastPhien = data.phien;
 
-            const duLieuDuDoan = tinhDuDoan(chuoiCau);
-            duDoan = duLieuDuDoan.duDoan;
-            doTinCay = duLieuDuDoan.doTinCay;
-            mucDoTinCay = duLieuDuDoan.mucDoTinCay;
+            const kq = tinhDuDoan(chuoiCau);
+            duDoan = kq.duDoan;
+            doTinCay = kq.doTinCay;
+            mucDoTinCay = kq.mucDoTinCay;
+            tenCau = kq.tenCau;
         }
 
         res.json({
@@ -81,16 +85,20 @@ app.get("/api/sun", async (req, res) => {
             phien_hien_tai: data.phien_hien_tai,
 
             chuoi_cau: chuoiCau,
+            ten_cau: tenCau,
             du_doan: duDoan,
             do_tin_cay: doTinCay,
             muc_do_tin_cay: mucDoTinCay
         });
 
     } catch (err) {
-        res.status(500).json({ error: "Không lấy được dữ liệu" });
+        res.status(500).json({
+            error: "Không lấy được dữ liệu API gốc"
+        });
     }
 });
 
+/* ================== START SERVER ================== */
 app.listen(PORT, () => {
-    console.log("API SUN chạy tại port", PORT);
+    console.log("SUN API chạy tại port", PORT);
 });
