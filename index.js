@@ -4,13 +4,21 @@ const axios = require("axios");
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-/* ================== BIẾN LƯU TRẠNG THÁI ================== */
+/* ================== BIẾN TRẠNG THÁI ================== */
 let lastPhien = null;
 let chuoiCau = "";
+
 let duDoan = "Chưa có";
 let doTinCay = 0;
 let mucDoTinCay = "Thấp";
 let tenCau = "Chưa xác định";
+
+// thống kê
+let win = 0;
+let loss = 0;
+
+// lưu dự đoán phiên trước để so kết quả
+let duDoanTruoc = null;
 
 /* ================== THUẬT TOÁN SOI CẦU ================== */
 function tinhDuDoan(chuoi) {
@@ -54,7 +62,7 @@ function tinhDuDoan(chuoi) {
     };
 }
 
-/* ================== API SUN ================== */
+/* ================== API ================== */
 app.get("/api/sun", async (req, res) => {
     try {
         const { data } = await axios.get(
@@ -63,16 +71,31 @@ app.get("/api/sun", async (req, res) => {
 
         const kyTu = data.ket_qua === "Tài" ? "T" : "X";
 
-        // Chỉ nối chuỗi khi có phiên mới
         if (data.phien !== lastPhien) {
+
+            /* ====== SO KẾT QUẢ CHO DỰ ĐOÁN TRƯỚC ====== */
+            if (duDoanTruoc) {
+                if (duDoanTruoc === data.ket_qua) {
+                    win++;
+                } else {
+                    loss++;
+                }
+            }
+
+            /* ====== NỐI CHUỖI CẦU ====== */
             chuoiCau += kyTu;
             lastPhien = data.phien;
 
+            /* ====== TÍNH DỰ ĐOÁN MỚI ====== */
             const kq = tinhDuDoan(chuoiCau);
+
             duDoan = kq.duDoan;
             doTinCay = kq.doTinCay;
             mucDoTinCay = kq.mucDoTinCay;
             tenCau = kq.tenCau;
+
+            // lưu dự đoán cho phiên sau
+            duDoanTruoc = duDoan;
         }
 
         res.json({
@@ -88,17 +111,21 @@ app.get("/api/sun", async (req, res) => {
             ten_cau: tenCau,
             du_doan: duDoan,
             do_tin_cay: doTinCay,
-            muc_do_tin_cay: mucDoTinCay
+            muc_do_tin_cay: mucDoTinCay,
+
+            win: win,
+            loss: loss,
+            ti_le_thang: win + loss > 0
+                ? ((win / (win + loss)) * 100).toFixed(2) + "%"
+                : "0%"
         });
 
     } catch (err) {
-        res.status(500).json({
-            error: "Không lấy được dữ liệu API gốc"
-        });
+        res.status(500).json({ error: "Không lấy được dữ liệu" });
     }
 });
 
-/* ================== START SERVER ================== */
+/* ================== START ================== */
 app.listen(PORT, () => {
     console.log("SUN API chạy tại port", PORT);
 });
