@@ -44,7 +44,7 @@ function appendChuoiCau(chuoi, kyTu, max = 500) {
     return chuoi;
 }
 
-/* ================== THUẬT TOÁN SOI CẦU ================== */
+/* ================== THUẬT TOÁN SOI CẦU (THEO CẦU) ================== */
 function tinhDuDoan(chuoi) {
     const patterns = [
         { name: "1-1", list: ["TXTX", "XTXT"], tc: 72 },
@@ -65,11 +65,12 @@ function tinhDuDoan(chuoi) {
                 const last = pat[pat.length - 1];
                 return {
                     tenCau: p.name,
-                    duDoan: last === "T" ? "Xỉu" : "Tài",
+                    duDoan: last === "T" ? "Tài" : "Xỉu", // ✅ THEO CẦU
                     doTinCay: p.tc,
                     mucDoTinCay:
                         p.tc >= 85 ? "Rất cao" :
-                        p.tc >= 75 ? "Cao" : "Trung bình"
+                        p.tc >= 75 ? "Cao" :
+                        "Trung bình"
                 };
             }
         }
@@ -115,20 +116,19 @@ app.get("/api/sun", async (req, res) => {
             state.chuoiCau = appendChuoiCau(state.chuoiCau, kyTu);
             state.lastPhien = data.phien;
 
-            /* ====== LƯU ====== */
             saveState();
         }
 
         /* ====== DỰ ĐOÁN ====== */
         const kq = tinhDuDoan(state.chuoiCau);
         state.duDoanTruoc = kq.duDoan;
-
         saveState();
 
         res.json({
             phien: data.phien,
             ket_qua: data.ket_qua,
-
+            
+            phien_hien_tai: data.phien_hien_tai, // ✅ ADD
             chuoi_cau: state.chuoiCau,
             ten_cau: kq.tenCau,
             du_doan: kq.duDoan,
