@@ -43,8 +43,8 @@ function tinhDuDoan(chuoi) {
     }
 
     return {
-        duDoan: "Chờ cầu rõ",
-        doTinCay: 55,
+        duDoan: "Chờ dữ liệu",
+        doTinCay: 0,
         mucDoTinCay: "Thấp",
         tenCau: "Không xác định"
     };
