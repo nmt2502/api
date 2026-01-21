@@ -156,8 +156,8 @@ app.get("/api/sun", async (req, res) => {
 
         res.json({
             phien: data.phien,
-            phien_hien_tai: data.phien_hien_tai,
             ket_qua: data.ket_qua,
+            phien_hien_tai: data.phien_hien_tai,
 
             chuoi_cau_day_du: state.chuoiCau,
             chuoi_cau: chuoiCau20,
