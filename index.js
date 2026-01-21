@@ -82,6 +82,12 @@ function tinhDuDoan(chuoi) {
         { name: "1-2-4", list: ["TXXTTTT", "XTTXXXX"], tc: 85 },
         { name: "Bệt", list: ["TTTTT", "XXXXX"], tc: 90 },
         { name: "2-2", list: ["TTXX", "XXTT"], tc: 70 },
+        { name: "2-3", list: ["TTXXX", "XXTTT"], tc: 75 },
+        { name: "3-2", list: ["TTTXX", "XXXTT"], tc: 79 },
+        { name: "3-4", list: ["TTTXXXX", "XXXTTTT"], tc: 83 },
+        { name: "6-2", list: ["TTTTTTX", "XXXXXXT"], tc: 87 },
+        { name: "2-6", list: ["TTXXXXXX", "XXTTTTTT"], tc: 93 },
+        { name: "7-1-2", list: ["TTTTTTTXTT", "XXXXXXXTXX"], tc: 89 },
         { name: "3-3", list: ["TTTXXX", "XXXTTT"], tc: 80 },
         { name: "4-4", list: ["TTTTXXXX", "XXXXTTTT"], tc: 83 },
         { name: "4-5", list: ["TTTTXXXXX", "XXXXTTTTT"], tc: 88 }
@@ -105,9 +111,9 @@ function tinhDuDoan(chuoi) {
     }
 
     return {
-        tenCau: "Chưa rõ cầu",
-        duDoan: "Chờ thêm dữ liệu",
-        doTinCay: 55,
+        tenCau: "Chưa Rõ Cầu Như Nào",
+        duDoan: "Chờ Dữ Liệu",
+        doTinCay: 0,
         mucDoTinCay: "Thấp"
     };
 }
