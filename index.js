@@ -17,7 +17,7 @@ let tenCau = "Chưa xác định";
 let win = 0;
 let loss = 0;
 
-// lưu dự đoán phiên trước để so kết quả
+// lưu dự đoán phiên trước
 let duDoanTruoc = null;
 
 /* ================== THUẬT TOÁN SOI CẦU ================== */
@@ -39,16 +39,13 @@ function tinhDuDoan(chuoi) {
         for (const pat of p.list) {
             if (chuoi.endsWith(pat)) {
                 const last = pat[pat.length - 1];
-                const duDoan = last === "T" ? "Xỉu" : "Tài";
-
                 return {
                     tenCau: p.name,
-                    duDoan,
+                    duDoan: last === "T" ? "Xỉu" : "Tài",
                     doTinCay: p.tc,
                     mucDoTinCay:
                         p.tc >= 85 ? "Rất cao" :
-                        p.tc >= 75 ? "Cao" :
-                        "Trung bình"
+                        p.tc >= 75 ? "Cao" : "Trung bình"
                 };
             }
         }
@@ -73,8 +70,12 @@ app.get("/api/sun", async (req, res) => {
 
         if (data.phien !== lastPhien) {
 
-            /* ====== SO KẾT QUẢ CHO DỰ ĐOÁN TRƯỚC ====== */
-            if (duDoanTruoc) {
+            /* ====== SO KẾT QUẢ DỰ ĐOÁN PHIÊN TRƯỚC ====== */
+            if (
+                duDoanTruoc &&
+                duDoanTruoc !== "Chờ thêm dữ liệu" &&
+                duDoanTruoc !== "Chưa có"
+            ) {
                 if (duDoanTruoc === data.ket_qua) {
                     win++;
                 } else {
@@ -88,13 +89,12 @@ app.get("/api/sun", async (req, res) => {
 
             /* ====== TÍNH DỰ ĐOÁN MỚI ====== */
             const kq = tinhDuDoan(chuoiCau);
-
             duDoan = kq.duDoan;
             doTinCay = kq.doTinCay;
             mucDoTinCay = kq.mucDoTinCay;
             tenCau = kq.tenCau;
 
-            // lưu dự đoán cho phiên sau
+            // lưu dự đoán cho phiên kế tiếp
             duDoanTruoc = duDoan;
         }
 
@@ -113,15 +113,16 @@ app.get("/api/sun", async (req, res) => {
             do_tin_cay: doTinCay,
             muc_do_tin_cay: mucDoTinCay,
 
-            win: win,
-            loss: loss,
-            ti_le_thang: win + loss > 0
-                ? ((win / (win + loss)) * 100).toFixed(2) + "%"
-                : "0%"
+            win,
+            loss,
+            ti_le_thang:
+                win + loss > 0
+                    ? ((win / (win + loss)) * 100).toFixed(2) + "%"
+                    : "0%"
         });
 
     } catch (err) {
-        res.status(500).json({ error: "Không lấy được dữ liệu" });
+        res.status(500).json({ error: "Không lấy được dữ liệu API gốc" });
     }
 });
 
