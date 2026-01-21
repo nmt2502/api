@@ -44,6 +44,26 @@ function appendChuoiCau(chuoi, kyTu, max = 500) {
     return chuoi;
 }
 
+/* ================== TÁCH 20 CHUỖI CẦU ================== */
+function tachChuoiCau(chuoi, limit = 20) {
+    if (!chuoi || chuoi.length === 0) return [];
+
+    const result = [];
+    let temp = chuoi[0];
+
+    for (let i = 1; i < chuoi.length; i++) {
+        if (chuoi[i] === chuoi[i - 1]) {
+            temp += chuoi[i];
+        } else {
+            result.push(temp);
+            temp = chuoi[i];
+        }
+    }
+    result.push(temp);
+
+    return result.slice(-limit);
+}
+
 /* ================== THUẬT TOÁN SOI CẦU (THEO CẦU) ================== */
 function tinhDuDoan(chuoi) {
     const patterns = [
@@ -51,10 +71,8 @@ function tinhDuDoan(chuoi) {
         { name: "2-1-2", list: ["TTXTT", "XXTXX"], tc: 75 },
         { name: "3-1", list: ["TTTX", "XXXT"], tc: 78 },
         { name: "1-4", list: ["TXXXX", "XTTTT"], tc: 83 },
-        
         { name: "1-5", list: ["TXXXXX", "XTTTTT"], tc: 81 },
         { name: "1-6", list: ["TXXXXXX", "XTTTTTT"], tc: 87 },
-        { name: "4-1", list: ["TTTX", "XXXT"], tc: 78 },
         { name: "6-2-1", list: ["TTTTTTXXT", "XXXXXXTTX"], tc: 87 },
         { name: "4-1", list: ["TTTTX", "XXXXT"], tc: 78 },
         { name: "5-1", list: ["TTTTTX", "XXXXXT"], tc: 91 },
@@ -75,7 +93,7 @@ function tinhDuDoan(chuoi) {
                 const last = pat[pat.length - 1];
                 return {
                     tenCau: p.name,
-                    duDoan: last === "T" ? "Tài" : "Xỉu", // ✅ THEO CẦU
+                    duDoan: last === "T" ? "Tài" : "Xỉu", // ✅ theo cầu
                     doTinCay: p.tc,
                     mucDoTinCay:
                         p.tc >= 85 ? "Rất cao" :
@@ -134,12 +152,17 @@ app.get("/api/sun", async (req, res) => {
         state.duDoanTruoc = kq.duDoan;
         saveState();
 
+        const chuoiCau20 = tachChuoiCau(state.chuoiCau, 20);
+
         res.json({
             phien: data.phien,
+            phien_hien_tai: data.phien_hien_tai,
             ket_qua: data.ket_qua,
-            
-            phien_hien_tai: data.phien_hien_tai, // ✅ ADD
-            chuoi_cau: state.chuoiCau,
+
+            chuoi_cau_day_du: state.chuoiCau,
+            chuoi_cau: chuoiCau20,
+            so_chuoi: chuoiCau20.length,
+
             ten_cau: kq.tenCau,
             du_doan: kq.duDoan,
             do_tin_cay: kq.doTinCay,
