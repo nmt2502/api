@@ -208,6 +208,15 @@ app.get("/api/sun", async (req, res) => {
     }
 });
 
+/* ================== AUTO CHECK API NỘI BỘ ================== */
+const AUTO_INTERVAL = 5000;
+
+setInterval(async () => {
+    try {
+        await axios.get(`http://localhost:${PORT}/api/sun`);
+    } catch (err) {}
+}, AUTO_INTERVAL);
+
 /* ================== START ================== */
 app.listen(PORT, () => {
     console.log("🚀 SUN API chạy tại port", PORT);
