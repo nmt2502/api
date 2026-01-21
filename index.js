@@ -1,24 +1,45 @@
 const express = require("express");
 const axios = require("axios");
+const fs = require("fs");
+const path = require("path");
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+const DATA_FILE = path.join(__dirname, "data.json");
 
-/* ================== BIẾN TRẠNG THÁI ================== */
+/* ================== LOAD DATA ================== */
 let lastPhien = null;
 let chuoiCau = "";
+let win = 0;
+let loss = 0;
+let duDoanTruoc = null;
 
+if (fs.existsSync(DATA_FILE)) {
+    const saved = JSON.parse(fs.readFileSync(DATA_FILE, "utf8"));
+    lastPhien = saved.lastPhien;
+    chuoiCau = saved.chuoiCau;
+    win = saved.win;
+    loss = saved.loss;
+    duDoanTruoc = saved.duDoanTruoc;
+}
+
+/* ================== BIẾN HIỆN TẠI ================== */
 let duDoan = "Chưa có";
 let doTinCay = 0;
 let mucDoTinCay = "Thấp";
 let tenCau = "Chưa xác định";
 
-// thống kê
-let win = 0;
-let loss = 0;
-
-// lưu dự đoán phiên trước
-let duDoanTruoc = null;
+/* ================== SAVE DATA ================== */
+function saveData() {
+    fs.writeFileSync(
+        DATA_FILE,
+        JSON.stringify(
+            { lastPhien, chuoiCau, win, loss, duDoanTruoc },
+            null,
+            2
+        )
+    );
+}
 
 /* ================== THUẬT TOÁN SOI CẦU ================== */
 function tinhDuDoan(chuoi) {
@@ -70,49 +91,40 @@ app.get("/api/sun", async (req, res) => {
 
         if (data.phien !== lastPhien) {
 
-            /* ====== SO KẾT QUẢ DỰ ĐOÁN PHIÊN TRƯỚC ====== */
+            /* ====== TÍNH WIN / LOSS ====== */
             if (
                 duDoanTruoc &&
                 duDoanTruoc !== "Chờ thêm dữ liệu" &&
                 duDoanTruoc !== "Chưa có"
             ) {
-                if (duDoanTruoc === data.ket_qua) {
-                    win++;
-                } else {
-                    loss++;
-                }
+                if (duDoanTruoc === data.ket_qua) win++;
+                else loss++;
             }
 
-            /* ====== NỐI CHUỖI CẦU ====== */
+            /* ====== UPDATE CHUỖI ====== */
             chuoiCau += kyTu;
             lastPhien = data.phien;
 
-            /* ====== TÍNH DỰ ĐOÁN MỚI ====== */
+            /* ====== DỰ ĐOÁN MỚI ====== */
             const kq = tinhDuDoan(chuoiCau);
             duDoan = kq.duDoan;
             doTinCay = kq.doTinCay;
             mucDoTinCay = kq.mucDoTinCay;
             tenCau = kq.tenCau;
 
-            // lưu dự đoán cho phiên kế tiếp
             duDoanTruoc = duDoan;
+
+            saveData(); // 🔒 LƯU NGAY
         }
 
         res.json({
             phien: data.phien,
-            xuc_xac_1: data.xuc_xac_1,
-            xuc_xac_2: data.xuc_xac_2,
-            xuc_xac_3: data.xuc_xac_3,
-            tong: data.tong,
             ket_qua: data.ket_qua,
-            phien_hien_tai: data.phien_hien_tai,
-
             chuoi_cau: chuoiCau,
             ten_cau: tenCau,
             du_doan: duDoan,
             do_tin_cay: doTinCay,
             muc_do_tin_cay: mucDoTinCay,
-
             win,
             loss,
             ti_le_thang:
@@ -121,8 +133,8 @@ app.get("/api/sun", async (req, res) => {
                     : "0%"
         });
 
-    } catch (err) {
-        res.status(500).json({ error: "Không lấy được dữ liệu API gốc" });
+    } catch (e) {
+        res.status(500).json({ error: "API lỗi" });
     }
 });
 
